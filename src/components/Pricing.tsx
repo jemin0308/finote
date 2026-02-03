@@ -18,7 +18,7 @@ export default function Pricing({ country = 'KR' }: { country?: string }) {
 
     const isKR = country === 'KR';
     const basicPrice = isKR ? "9,900원" : "$9.99";
-    const basicLink = isKR ? "#" : "https://lemonsqueezy.com/";
+    const basicLink = isKR ? "#" : "https://finote.lemonsqueezy.com/checkout/buy/17dfc317-eb7d-4b95-a49d-64906f97746d";
 
     // Phase 1: Pre-load the script only
     useEffect(() => {
