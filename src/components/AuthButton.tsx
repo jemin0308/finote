@@ -27,10 +27,12 @@ export default function AuthButton() {
     }, [supabase]);
 
     const handleLogin = async () => {
+        // Build base URL for redirect
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${location.origin}/auth/callback`,
+                redirectTo: `${baseUrl}/auth/callback`,
             },
         });
     };
