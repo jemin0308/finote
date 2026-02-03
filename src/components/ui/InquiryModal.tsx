@@ -25,13 +25,13 @@ export default function InquiryModal({
         // Construct mailto link
         // Replace 'your-email@gmail.com' with the actual user email if known, or leave as placeholder
         const recipient = "finote.official@gmail.com";
-        const subject = `[Finote VIP 문의] ${formData.name}님의 파트너십 제안`;
+        const subject = `[Finote VIP 문의] ${formData.name}님의 샘플 신청`;
         const body = `성함/회사명: ${formData.name}\n연락처: ${formData.phone}\n이메일: ${formData.email}\n\n문의내용:\n${formData.message}`;
 
         const mailtoUrl = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
-        // Open email client
-        window.location.href = mailtoUrl;
+        // Open email client in a new tab/window for better stability
+        window.open(mailtoUrl, '_blank');
 
         setStatus('success');
 
