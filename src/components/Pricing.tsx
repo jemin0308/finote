@@ -1,82 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import InquiryModal from './ui/InquiryModal';
 import EmailForm from './ui/EmailForm';
-import { loadPaymentWidget, PaymentWidgetInstance } from "@tosspayments/payment-widget-sdk";
-
-const TOSS_CLIENT_KEY = "test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq"; // Test Key
-const TOSS_CUSTOMER_KEY = "YW5vbnltb3Vz"; // Anonymous customer key
 
 export default function Pricing({ country = 'KR' }: { country?: string }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [paymentWidget, setPaymentWidget] = useState<PaymentWidgetInstance | null>(null);
-    const [isPaying, setIsPaying] = useState(false);
-    const [isWidgetReady, setIsWidgetReady] = useState(false);
-    const [isRendering, setIsRendering] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("");
 
-    const isKR = country === 'KR';
-    const basicPrice = isKR ? "9,900원" : "$9.99";
-    const basicLink = isKR ? "#" : "https://finote.lemonsqueezy.com/checkout/buy/17dfc317-eb7d-4b95-a49d-64906f97746d";
-
-    // Phase 1: Pre-load the script only
-    useEffect(() => {
-        if (isKR && !paymentWidget) {
-            loadPaymentWidget(TOSS_CLIENT_KEY, TOSS_CUSTOMER_KEY).then(setPaymentWidget);
-        }
-    }, [isKR, paymentWidget]);
-
-    // Phase 2: Render UI components ONLY when isPaying is active and and divs are visible
-    useEffect(() => {
-        if (isPaying && paymentWidget && !isWidgetReady && !isRendering) {
-            const renderWidget = async () => {
-                setIsRendering(true);
-                try {
-                    // Ensure divs are rendered by React before calling this (small delay for DOM sync)
-                    await new Promise(resolve => setTimeout(resolve, 100));
-
-                    await Promise.all([
-                        paymentWidget.renderPaymentMethods("#payment-method", { value: 9900 }),
-                        paymentWidget.renderAgreement("#agreement")
-                    ]);
-
-                    setIsWidgetReady(true);
-                    setErrorMessage("");
-                } catch (err: any) {
-                    console.error("Widget render failed:", err);
-                    setErrorMessage("결제 시스템 로딩 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-                } finally {
-                    setIsRendering(false);
-                }
-            };
-            renderWidget();
-        }
-    }, [isPaying, paymentWidget, isWidgetReady, isRendering]);
-
-    const handleTossPayment = async () => {
-        if (!paymentWidget || !isWidgetReady) return;
-
-        setErrorMessage("");
-        try {
-            await paymentWidget.requestPayment({
-                orderId: `ORDER-${new Date().getTime()}`,
-                orderName: "Finote Basic Subscription",
-                customerName: "Anonymous User",
-                successUrl: `${window.location.origin}/success`,
-                failUrl: `${window.location.origin}/fail`,
-            });
-        } catch (err: any) {
-            console.error("Payment failed:", err);
-            // If rendering error occurs during request, force re-render
-            if (err.message?.includes("렌더링")) {
-                setIsWidgetReady(false);
-                setErrorMessage("결제 UI 로딩이 지연되고 있습니다. 잠시만 기다려주세요.");
-            } else {
-                setErrorMessage(err.message || "결제 중 오류가 발생했습니다.");
-            }
-        }
-    };
+    // Use Lemon Squeezy for everyone as requested
+    const basicPrice = country === 'KR' ? "약 13,000원 ($9.99)" : "$9.99";
+    const basicLink = "https://datafininovation.lemonsqueezy.com/checkout/buy/17dfc317-feba-4c26-b9df-6dd2b655dbe2";
 
     const cards = [
         {
@@ -209,61 +142,22 @@ export default function Pricing({ country = 'KR' }: { country?: string }) {
                                 <EmailForm isMinimal={false} buttonText="무료 구독하기" />
                             ) : (
                                 <div style={{ marginTop: 'auto' }}>
-
-                                    {isKR && isPaying && (
-                                        <div style={{
-                                            backgroundColor: '#f8fafc',
-                                            padding: '16px',
-                                            borderRadius: '12px',
-                                            marginBottom: '20px',
-                                            border: '1px solid #e2e8f0'
-                                        }}>
-                                            <div id="payment-method" style={{ minHeight: '300px' }} />
-                                            <div id="agreement" />
-                                        </div>
-                                    )}
-
-                                    {errorMessage && (
-                                        <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '10px', textAlign: 'center' }}>
-                                            ⚠️ {errorMessage}
-                                        </div>
-                                    )}
-
-                                    {isKR ? (
-                                        <button
-                                            onClick={() => {
-                                                if (isWidgetReady) {
-                                                    handleTossPayment();
-                                                } else {
-                                                    setIsPaying(true);
-                                                }
-                                            }}
-                                            className='btn btn-primary'
-                                            disabled={isPaying && !isWidgetReady}
-                                            style={{ width: '100%', border: 'none' }}
-                                        >
-                                            {isPaying
-                                                ? (isWidgetReady ? '결제 요청하기' : '결제 시스템 준비 중...')
-                                                : card.cta}
-                                        </button>
-                                    ) : (
-                                        <a
-                                            href={basicLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className='btn btn-primary'
-                                            style={{
-                                                width: '100%',
-                                                border: 'none',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                textDecoration: 'none'
-                                            }}
-                                        >
-                                            {card.cta}
-                                        </a>
-                                    )}
+                                    <a
+                                        href={basicLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className='btn btn-primary'
+                                        style={{
+                                            width: '100%',
+                                            border: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            textDecoration: 'none'
+                                        }}
+                                    >
+                                        {card.cta}
+                                    </a>
                                 </div>
                             )}
                         </div>
