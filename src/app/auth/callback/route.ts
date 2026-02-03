@@ -8,8 +8,19 @@ export async function GET(request: Request) {
 
     if (code) {
         const supabase = await createClient()
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (!error) {
+        const { error, data } = await supabase.auth.exchangeCodeForSession(code)
+        if (!error && data?.user) {
+            // Ensure profile exists
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .upsert({
+                    id: data.user.id,
+                    email: data.user.email,
+                    full_name: data.user.user_metadata.full_name || 'User'
+                }, { onConflict: 'id' });
+
+            if (profileError) console.error("Profile sync error:", profileError);
+
             return NextResponse.redirect(`${origin}${next}`)
         }
     }

@@ -19,13 +19,17 @@ export async function POST(request: Request) {
             const email = body.data.attributes.user_email;
             const variantName = body.data.attributes.first_order_item.variant_name;
 
-            console.log(`💰 Payment Received: ${email} for ${variantName}`);
+            console.log(`💰 Global Payment Received: ${email} for ${variantName}`);
 
             const supabase = await createClient();
 
-            // Update user subscription status (Example Logic)
-            // In real app, we might need to look up user by email or store customer_id
-            // const { error } = await supabase.from('profiles').update({ ... }).eq('email', email);
+            // Update user subscription status by email
+            const { error } = await supabase
+                .from('profiles')
+                .update({ is_subscribed: true, subscription_tier: 'basic' })
+                .eq('email', email);
+
+            if (error) console.error("Webhook DB update error:", error);
         }
 
         return NextResponse.json({ message: 'Webhook received' });

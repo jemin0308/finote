@@ -15,8 +15,8 @@ export default function Header() {
                     Finote
                 </div>
                 <nav style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
-                    <a href="#" style={{ textDecoration: 'none', color: 'var(--text-main)', fontWeight: '500' }}>뉴스레터</a>
-                    <a href="#" style={{ textDecoration: 'none', color: 'var(--text-main)', fontWeight: '500' }}>VIP 솔루션</a>
+                    <a href="/" style={{ textDecoration: 'none', color: 'var(--text-main)', fontWeight: '500' }}>홈</a>
+                    <a href="/vip-lounge" style={{ textDecoration: 'none', color: 'var(--color-secondary)', fontWeight: '700' }}>VIP 라운지</a>
                     <AuthButton />
                 </nav>
             </div>
