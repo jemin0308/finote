@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Antigravity Finance | AI Financial Reports",
+  title: "Finote | AI Financial Reports",
   description: "Your personalized AI investment secretary.",
 };
 
