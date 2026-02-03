@@ -13,44 +13,49 @@ export default function Pricing({ country = 'KR' }: { country?: string }) {
     const [paymentWidget, setPaymentWidget] = useState<PaymentWidgetInstance | null>(null);
     const [isPaying, setIsPaying] = useState(false);
     const [isWidgetReady, setIsWidgetReady] = useState(false);
+    const [isRendering, setIsRendering] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
     const isKR = country === 'KR';
     const basicPrice = isKR ? "9,900원" : "$9.99";
     const basicLink = isKR ? "#" : "https://lemonsqueezy.com/";
 
-    // [수정] 컴포넌트 마운트 시 위젯 미리 로드 및 렌더링
-    // 이래야 사용자가 버튼을 눌렀을 때 이미 UI가 다 그려져 있어서 에러가 안 납니다.
+    // Phase 1: Pre-load the script only
     useEffect(() => {
         if (isKR && !paymentWidget) {
-            const initializeWidget = async () => {
-                try {
-                    const loadedWidget = await loadPaymentWidget(TOSS_CLIENT_KEY, TOSS_CUSTOMER_KEY);
-
-                    // 백그라운드에서 미리 렌더링 (DOM에는 이미 div들이 존재함)
-                    await Promise.all([
-                        loadedWidget.renderPaymentMethods("#payment-method", { value: 9900 }),
-                        loadedWidget.renderAgreement("#agreement")
-                    ]);
-
-                    setPaymentWidget(loadedWidget);
-                    setIsWidgetReady(true);
-                    console.log("Toss Widget ready in background");
-                } catch (err: any) {
-                    console.error("Widget load failed:", err);
-                    // 배경에서 실패해도 사용자 액션 전까지는 에러 메시지 노출 안 함
-                }
-            };
-
-            initializeWidget();
+            loadPaymentWidget(TOSS_CLIENT_KEY, TOSS_CUSTOMER_KEY).then(setPaymentWidget);
         }
     }, [isKR, paymentWidget]);
 
-    const handleTossPayment = async () => {
-        if (!paymentWidget || !isWidgetReady) {
-            setErrorMessage("결제 시스템을 불러오는 중입니다. 잠시만 기다려주세요.");
-            return;
+    // Phase 2: Render UI components ONLY when isPaying is active and and divs are visible
+    useEffect(() => {
+        if (isPaying && paymentWidget && !isWidgetReady && !isRendering) {
+            const renderWidget = async () => {
+                setIsRendering(true);
+                try {
+                    // Ensure divs are rendered by React before calling this (small delay for DOM sync)
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    await Promise.all([
+                        paymentWidget.renderPaymentMethods("#payment-method", { value: 9900 }),
+                        paymentWidget.renderAgreement("#agreement")
+                    ]);
+
+                    setIsWidgetReady(true);
+                    setErrorMessage("");
+                } catch (err: any) {
+                    console.error("Widget render failed:", err);
+                    setErrorMessage("결제 시스템 로딩 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                } finally {
+                    setIsRendering(false);
+                }
+            };
+            renderWidget();
         }
+    }, [isPaying, paymentWidget, isWidgetReady, isRendering]);
+
+    const handleTossPayment = async () => {
+        if (!paymentWidget || !isWidgetReady) return;
 
         setErrorMessage("");
         try {
@@ -63,7 +68,13 @@ export default function Pricing({ country = 'KR' }: { country?: string }) {
             });
         } catch (err: any) {
             console.error("Payment failed:", err);
-            setErrorMessage(err.message || "결제 중 오류가 발생했습니다.");
+            // If rendering error occurs during request, force re-render
+            if (err.message?.includes("렌더링")) {
+                setIsWidgetReady(false);
+                setErrorMessage("결제 UI 로딩이 지연되고 있습니다. 잠시만 기다려주세요.");
+            } else {
+                setErrorMessage(err.message || "결제 중 오류가 발생했습니다.");
+            }
         }
     };
 
@@ -118,7 +129,7 @@ export default function Pricing({ country = 'KR' }: { country?: string }) {
 
     return (
         <section id="pricing" className="section" style={{ backgroundColor: 'var(--bg-page)' }}>
-            <div className="container">
+            <div className="container" style={{ position: 'relative' }}>
                 <div style={{ textAlign: 'center', marginBottom: '60px' }}>
                     <h2 style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '16px', color: 'var(--color-primary)' }}>
                         성공의 기준을 바꾸는 데이터 인사이트
@@ -198,18 +209,19 @@ export default function Pricing({ country = 'KR' }: { country?: string }) {
                                 <EmailForm isMinimal={false} buttonText="무료 구독하기" />
                             ) : (
                                 <div style={{ marginTop: 'auto' }}>
-                                    {/* [수정] 위젯 컨테이너는 항상 존재하되, 결제 단계가 아닐 때만 숨깁니다 */}
-                                    <div style={{
-                                        display: (isKR && isPaying) ? 'block' : 'none',
-                                        backgroundColor: '#f8fafc',
-                                        padding: '16px',
-                                        borderRadius: '12px',
-                                        marginBottom: '20px',
-                                        border: '1px solid #e2e8f0'
-                                    }}>
-                                        <div id="payment-method" style={{ minHeight: '300px' }} />
-                                        <div id="agreement" />
-                                    </div>
+
+                                    {isKR && isPaying && (
+                                        <div style={{
+                                            backgroundColor: '#f8fafc',
+                                            padding: '16px',
+                                            borderRadius: '12px',
+                                            marginBottom: '20px',
+                                            border: '1px solid #e2e8f0'
+                                        }}>
+                                            <div id="payment-method" style={{ minHeight: '300px' }} />
+                                            <div id="agreement" />
+                                        </div>
+                                    )}
 
                                     {errorMessage && (
                                         <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '10px', textAlign: 'center' }}>
@@ -220,16 +232,19 @@ export default function Pricing({ country = 'KR' }: { country?: string }) {
                                     {isKR ? (
                                         <button
                                             onClick={() => {
-                                                if (isPaying) {
+                                                if (isWidgetReady) {
                                                     handleTossPayment();
                                                 } else {
                                                     setIsPaying(true);
                                                 }
                                             }}
                                             className='btn btn-primary'
+                                            disabled={isPaying && !isWidgetReady}
                                             style={{ width: '100%', border: 'none' }}
                                         >
-                                            {isPaying ? '결제 요청하기' : card.cta}
+                                            {isPaying
+                                                ? (isWidgetReady ? '결제 요청하기' : '결제 시스템 준비 중...')
+                                                : card.cta}
                                         </button>
                                     ) : (
                                         <a
